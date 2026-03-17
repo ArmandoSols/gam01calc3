@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Actividad de Gamificación 01 — Cálculo 1</title>
+<title>Actividad de Gamificación 01 — Cálculo 3</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#0f1923;--paper:#f8f4ed;--cream:#fffef9;--accent:#b5451b;--gold:#c9941a;--teal:#1a7a6e;--red:#c0392b;--border:#0f1923;--shadow:6px 6px 0 #0f1923}
@@ -96,7 +96,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
 </head>
 <body>
 <header>
-  <div class="logo">Actividad de Gamificación 01 — Cálculo 1</div>
+  <div class="logo">Actividad de Gamificación 01 — Cálculo 3</div>
   <div style="display:flex;align-items:center;gap:1rem">
     <div id="timer-box" style="display:none;flex-direction:column;align-items:flex-end">
       <div class="timer-label">Tiempo restante</div>
@@ -110,7 +110,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
   <div class="card-wrap">
     <div class="card">
       <h2 class="card-title">Registro del Estudiante</h2>
-      <p class="card-sub">Cálculo 1</p>
+      <p class="card-sub">Cálculo 3</p>
       <div class="field">
         <label>Apellidos</label>
         <input type="text" id="inp-apellidos" placeholder="Ej: González Pérez" autocomplete="off">
@@ -161,7 +161,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
     <div class="info-item"><span>Día</span><strong id="disp-dia">—</strong></div>
     <div class="info-item"><span>Horario</span><strong id="disp-horario">—</strong></div>
     <div class="info-item"><span>Cuatrimestre</span><strong id="disp-cuatrimestre">—</strong></div>
-    <div class="info-item"><span>Curso</span><strong>Cálculo 1</strong></div>
+    <div class="info-item"><span>Curso</span><strong>Cálculo 3</strong></div>
   </div>
   <div id="score-box">
     <div class="score-num" id="final-score">0</div>
@@ -169,7 +169,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
     <div class="score-msg" id="score-msg"></div>
     <div class="score-save" id="score-save"></div>
   </div>
-  <h2 class="puzzle-title">Actividad de Gamificación 01 — Cálculo 1</h2>
+  <h2 class="puzzle-title">Actividad de Gamificación 01 — Cálculo 3</h2>
   <p class="puzzle-instr">Lea cada definición y escriba la palabra correcta en MAYÚSCULAS, SIN ESPACIOS y SIN TILDES. Presione &quot;Verificar&quot; o Enter para confirmar cada respuesta. Tiene 2 intentos por pregunta. La sopa de letras es solo de referencia visual. Cuando termine, presione &quot;Entregar&quot;.</p>
   <div class="progress-wrap">
     <div class="progress-label"><span>Respondidas</span><span id="prog-text">0 / 0</span></div>
@@ -196,7 +196,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
 const CLUES=[{"id":1,"word":"CONSTANTE","clue":"Cuando se deriva una función multivariada con respecto de 'x' la variable 'y' se toma como:"},{"id":2,"word":"DERIVADAPARCIAL","clue":"Derivada que se representa con el símbolo ∂f/∂x."},{"id":3,"word":"REGLADELACADENA","clue":"Nombre de la derivada representada en la operación ∂f/∂u = ∂f/∂x · ∂x/∂u + ∂f/∂y · ∂y/∂u."},{"id":4,"word":"ORDENSUPERIOR","clue":"Nombre de las derivadas parciales de orden 2 o mayores."},{"id":5,"word":"DERIVADAIMPLICITA","clue":"Operación matemática representada por la operación ∂z/∂x = -Fx/Fz."},{"id":6,"word":"DERIVADADIRECCIONAL","clue":"Producto punto entre el vector gradiente y el vector unitario."},{"id":7,"word":"GRADIENTE","clue":"Vector formado por las derivadas parciales de cada variable evaluadas en un punto P."},{"id":8,"word":"CILINDRO","clue":"Curva extendida en un eje que corresponde a la variable ausente."},{"id":9,"word":"PARABOLA","clue":"Figura que se forma al dibujar el dominio máximo de {(x,y)∈ℝ²: y² - 4x - 4 > 0}."},{"id":10,"word":"HESSIANO","clue":"Nombre que recibe el discriminante D₂."},{"id":11,"word":"SILLA","clue":"Punto que da negativo el discriminante D₂."},{"id":12,"word":"CRITICO","clue":"Punto que hace cero el gradiente de una función."},{"id":13,"word":"OPTIMIZACION","clue":"Proceso que busca encontrar el valor mínimo o máximo de una función multivariada por medio del gradiente."},{"id":14,"word":"POLARES","clue":"Tipo de coordenadas que cambian x=senθ, y=cosθ."},{"id":15,"word":"TRIPLES","clue":"Tipo de integrales que describen el volumen de un sólido."}];
 const PTS=10;
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxGdtB-XdlZxKrCwxkLDa2k9AYnr3mNscYbvUQGYx70mAeZ6IOdkmKZt8oP9N7WgwEpnQ/exec";
-const CURSO="Cálculo 1";
+const CURSO="Cálculo 3";
 const CURSO_CORTO = {
   'Introducción al Cálculo': 'Intro',
   'Cálculo 1':               'Calc1',
