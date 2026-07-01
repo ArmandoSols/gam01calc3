@@ -140,15 +140,6 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
           <option value="6:00-9:00pm">6:00 - 9:00 pm</option>
         </select>
       </div>
-      <div class="field">
-        <label>Cuatrimestre</label>
-        <select id="inp-cuatrimestre">
-          <option value="">— Selecciona —</option>
-          <option value="I Cuatrimestre">I Cuatrimestre</option>
-          <option value="II Cuatrimestre">II Cuatrimestre</option>
-          <option value="III Cuatrimestre">III Cuatrimestre</option>
-        </select>
-      </div>
       <p class="err-msg" id="reg-err">⚠ Por favor completa todos los campos.</p>
       <button class="btn" type="button" id="btn-start">▶ Comenzar Actividad</button>
     </div>
@@ -160,7 +151,6 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
     <div class="info-item"><span>Estudiante</span><strong id="disp-nombre">—</strong></div>
     <div class="info-item"><span>Día</span><strong id="disp-dia">—</strong></div>
     <div class="info-item"><span>Horario</span><strong id="disp-horario">—</strong></div>
-    <div class="info-item"><span>Cuatrimestre</span><strong id="disp-cuatrimestre">—</strong></div>
     <div class="info-item"><span>Curso</span><strong>Cálculo 3</strong></div>
   </div>
   <div id="score-box">
@@ -195,7 +185,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
 <script>
 const CLUES=[{"id":1,"word":"CONSTANTE","clue":"Cuando se deriva una función multivariada con respecto de 'x' la variable 'y' se toma como:"},{"id":2,"word":"DERIVADAPARCIAL","clue":"Derivada que se representa con el símbolo ∂f/∂x."},{"id":3,"word":"REGLADELACADENA","clue":"Nombre de la derivada representada en la operación ∂f/∂u = ∂f/∂x · ∂x/∂u + ∂f/∂y · ∂y/∂u."},{"id":4,"word":"ORDENSUPERIOR","clue":"Nombre de las derivadas parciales de orden 2 o mayores."},{"id":5,"word":"DERIVADAIMPLICITA","clue":"Operación matemática representada por la operación ∂z/∂x = -Fx/Fz."},{"id":6,"word":"DERIVADADIRECCIONAL","clue":"Producto punto entre el vector gradiente y el vector unitario."},{"id":7,"word":"GRADIENTE","clue":"Vector formado por las derivadas parciales de cada variable evaluadas en un punto P."},{"id":8,"word":"CILINDRO","clue":"Curva extendida en un eje que corresponde a la variable ausente."},{"id":9,"word":"PARABOLA","clue":"Figura que se forma al dibujar el dominio máximo de {(x,y)∈ℝ²: y² - 4x - 4 > 0}."},{"id":10,"word":"HESSIANO","clue":"Nombre que recibe el discriminante D₂."},{"id":11,"word":"SILLA","clue":"Punto que da negativo el discriminante D₂."},{"id":12,"word":"CRITICO","clue":"Punto que hace cero el gradiente de una función."},{"id":13,"word":"OPTIMIZACION","clue":"Proceso que busca encontrar el valor mínimo o máximo de una función multivariada por medio del gradiente."},{"id":14,"word":"POLARES","clue":"Tipo de coordenadas que cambian x=senθ, y=cosθ."},{"id":15,"word":"TRIPLES","clue":"Tipo de integrales que describen el volumen de un sólido."}];
 const PTS=10;
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbx4McV4iv7uRhzrLFB-EV5ihTiFX5zJe2_hs1wuGRjxSnyBOX5xdi4EWOSNKNmsIGDUww/exec";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwNJiwMO3NCsvyhymA57exNjU-jQmnhvanqVkBy8HQebqFgKI2GirwUupPUoi7zkd4HAw/exec";
 const CURSO="Cálculo 3";
 const CURSO_CORTO = {
   'Introducción al Cálculo': 'Intro',
@@ -204,6 +194,8 @@ const CURSO_CORTO = {
   'Cálculo 3':               'Calc3',
   'Álgebra Lineal':          'Algebra',
   'Matemática Discreta':     'Discreta',
+  'Métodos Numéricos':       'Numericos',
+  'Matemática 2':            'Mate2',
 }[CURSO] || CURSO;
 const TIME_LIMIT = 60 * 60;
 
@@ -320,50 +312,77 @@ let activeClues=[], studentData={},answers={},submitted=false;
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 function goHome(){show('screen-register')}
 
+function saveState(){
+  if(!studentData.nombre) return;
+  const state={studentData, activeClues, answers, submitted, secondsLeft};
+  try{ localStorage.setItem('gamif_'+CURSO+'_'+studentData.nombre, JSON.stringify(state)); }catch(e){}
+}
+
+function clearState(){
+  if(!studentData.nombre) return;
+  try{ localStorage.removeItem('gamif_'+CURSO+'_'+studentData.nombre); }catch(e){}
+}
+
 function startActivity(){
   const apellidos=document.getElementById('inp-apellidos').value.trim();
   const nombre=document.getElementById('inp-nombre').value.trim();
   const dia=document.getElementById('inp-dia').value;
   const horario=document.getElementById('inp-horario').value;
-  const cuatrimestre=document.getElementById('inp-cuatrimestre').value;
-  if(!apellidos||!nombre||!dia||!horario||!cuatrimestre){
+  if(!apellidos||!nombre||!dia||!horario){
     document.getElementById('reg-err').style.display='block';
     document.getElementById('reg-err').textContent='⚠ Por favor completa todos los campos.';return;}
   document.getElementById('reg-err').style.display='none';
   const nombreCompleto = apellidos + ', ' + nombre;
-  studentData={nombre:nombreCompleto, dia, horario, cuatrimestre, curso:CURSO};
-  answers={};submitted=false;
 
-  // Seed unique per student
-  const seed=hashStr(nombre.toLowerCase()+dia+horario+String(Math.floor(Date.now()/60000)));
-  const rng=makeRng(seed);
+  // Check for saved state
+  let saved = null;
+  try{ const s = localStorage.getItem('gamif_'+CURSO+'_'+nombreCompleto); if(s) saved = JSON.parse(s); }catch(e){}
 
-  // 1. Shuffle all clues, then pick one clue per unique word, up to WORDS_PER_STUDENT
-  const shuffledAll = seededShuffle([...CLUES], rng);
-  const seenWords = new Set();
-  const pickedClues = [];
-  for(const c of shuffledAll){
-    if(seenWords.has(c.word)) continue; // already have a clue for this word
-    seenWords.add(c.word);
-    pickedClues.push(c);
-    if(pickedClues.length >= WORDS_PER_STUDENT) break;
+  if(saved && !saved.submitted){
+    // Restore previous session
+    studentData = saved.studentData;
+    activeClues = saved.activeClues;
+    answers     = saved.answers;
+    submitted   = saved.submitted;
+    secondsLeft = saved.secondsLeft;
+  } else {
+    // New session
+    studentData={nombre:nombreCompleto, dia, horario, curso:CURSO};
+    answers={};submitted=false;
+    secondsLeft = TIME_LIMIT;
+
+    const seed=hashStr(nombre.toLowerCase()+dia+horario+String(Math.floor(Date.now()/60000)));
+    const rng=makeRng(seed);
+    const shuffledAll = seededShuffle([...CLUES], rng);
+    const seenWords = new Set();
+    const pickedClues = [];
+    for(const c of shuffledAll){
+      if(seenWords.has(c.word)) continue;
+      seenWords.add(c.word);
+      pickedClues.push(c);
+      if(pickedClues.length >= WORDS_PER_STUDENT) break;
+    }
+    activeClues = seededShuffle(pickedClues, rng).map((c,i)=>({...c, displayId:i+1}));
+    activeClues.forEach(c=>{answers[c.displayId]={attempts:[],correct:false,attemptsUsed:0,word:c.word,nearlyCorrect:false};});
+
+    const{g,placed}=buildGrid(rng);
+    grid=g;placedWords=placed;
   }
 
-  // 2. Shuffle the final clue order
-  activeClues = seededShuffle(pickedClues, rng).map((c,i)=>({...c, displayId:i+1}));
-
-  activeClues.forEach(c=>{answers[c.displayId]={attempts:[],correct:false,attemptsUsed:0,word:c.word,nearlyCorrect:false};});
-
-  document.getElementById('disp-nombre').textContent=nombreCompleto;
-  document.getElementById('disp-dia').textContent=dia;
-  document.getElementById('disp-horario').textContent=horario;
-  document.getElementById('disp-cuatrimestre').textContent=cuatrimestre;
+  document.getElementById('disp-nombre').textContent=studentData.nombre;
+  document.getElementById('disp-dia').textContent=studentData.dia;
+  document.getElementById('disp-horario').textContent=studentData.horario;
   document.getElementById('score-box').style.display='none';
   document.getElementById('submit-btn').disabled=false;
   document.getElementById('submit-btn').textContent='✔ Entregar Actividad';
 
-  const{g,placed}=buildGrid(rng);
-  grid=g;placedWords=placed;
+  if(!grid.length){
+    const seed=hashStr(studentData.nombre.toLowerCase()+String(Math.floor(Date.now()/60000)));
+    const rng=makeRng(seed);
+    const{g,placed}=buildGrid(rng);
+    grid=g;placedWords=placed;
+  }
+
   renderGrid();renderClues();updateProgress();
   startTimer();
   show('screen-puzzle');
@@ -463,6 +482,7 @@ function submitAnswer(id){
     }
   }
   updateProgress();
+  saveState();
   syncProgress('progreso');
 }
 
@@ -513,7 +533,6 @@ function syncProgress(tipo='progreso', score=null){
     nombre:       studentData.nombre,
     dia:          studentData.dia,
     horario:      studentData.horario,
-    cuatrimestre: studentData.cuatrimestre,
     curso:        CURSO,
     cursoCorto:   CURSO_CORTO,
     progreso: respondidas+'/'+activeClues.length,
@@ -548,6 +567,7 @@ async function submitActivity(timeUp=false){
   });
   activeClues.forEach(item=>{if(answers[item.displayId].correct)highlightWord(item.word);});
   submitted=true;
+  clearState();
   const score = calcScore();
   const box=document.getElementById('score-box');
   box.style.display='block';
@@ -573,10 +593,21 @@ async function submitActivity(timeUp=false){
     }
   }, 1500);
 }
+// Warn before leaving/refreshing
+window.addEventListener('beforeunload', function(e){
+  if(!submitted && Object.keys(answers).length > 0){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 // Wire buttons via addEventListener (mobile-safe, avoids inline onclick issues)
 document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-start').addEventListener('click', startActivity);
-  document.getElementById('submit-btn').addEventListener('click', ()=>submitActivity(false));
+  document.getElementById('submit-btn').addEventListener('click', ()=>{
+    if(!confirm('¿Seguro que desea entregar la actividad? No podrá seguir respondiendo después.')) return;
+    submitActivity(false);
+  });
 });
 </script>
 </body>
