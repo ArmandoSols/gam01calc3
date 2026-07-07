@@ -152,6 +152,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
     <div class="info-item"><span>Día</span><strong id="disp-dia">—</strong></div>
     <div class="info-item"><span>Horario</span><strong id="disp-horario">—</strong></div>
     <div class="info-item"><span>Curso</span><strong>Cálculo 3</strong></div>
+    <div class="info-item"><span>Sesión</span><strong id="disp-sesion">1</strong></div>
   </div>
   <div id="score-box">
     <div class="score-num" id="final-score">0</div>
@@ -185,7 +186,7 @@ header{background:var(--ink);color:var(--paper);padding:1.1rem 2rem;display:flex
 <script>
 const CLUES=[{"id":1,"word":"CONSTANTE","clue":"Cuando se deriva una función multivariada con respecto de 'x' la variable 'y' se toma como:"},{"id":2,"word":"DERIVADAPARCIAL","clue":"Derivada que se representa con el símbolo ∂f/∂x."},{"id":3,"word":"REGLADELACADENA","clue":"Nombre de la derivada representada en la operación ∂f/∂u = ∂f/∂x · ∂x/∂u + ∂f/∂y · ∂y/∂u."},{"id":4,"word":"ORDENSUPERIOR","clue":"Nombre de las derivadas parciales de orden 2 o mayores."},{"id":5,"word":"DERIVADAIMPLICITA","clue":"Operación matemática representada por la operación ∂z/∂x = -Fx/Fz."},{"id":6,"word":"DERIVADADIRECCIONAL","clue":"Producto punto entre el vector gradiente y el vector unitario."},{"id":7,"word":"GRADIENTE","clue":"Vector formado por las derivadas parciales de cada variable evaluadas en un punto P."},{"id":8,"word":"CILINDRO","clue":"Curva extendida en un eje que corresponde a la variable ausente."},{"id":9,"word":"PARABOLA","clue":"Figura que se forma al dibujar el dominio máximo de {(x,y)∈ℝ²: y² - 4x - 4 > 0}."},{"id":10,"word":"HESSIANO","clue":"Nombre que recibe el discriminante D₂."},{"id":11,"word":"SILLA","clue":"Punto que da negativo el discriminante D₂."},{"id":12,"word":"CRITICO","clue":"Punto que hace cero el gradiente de una función."},{"id":13,"word":"OPTIMIZACION","clue":"Proceso que busca encontrar el valor mínimo o máximo de una función multivariada por medio del gradiente."},{"id":14,"word":"POLARES","clue":"Tipo de coordenadas que cambian x=senθ, y=cosθ."},{"id":15,"word":"TRIPLES","clue":"Tipo de integrales que describen el volumen de un sólido."}];
 const PTS=10;
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwNJiwMO3NCsvyhymA57exNjU-jQmnhvanqVkBy8HQebqFgKI2GirwUupPUoi7zkd4HAw/exec";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxwCi7_NjFSzwdfo3m25TW9evDYK5AZC6z_65R3y_iAHK8LnknrEoXz_uV0BgobDhJNjA/exec";
 const CURSO="Cálculo 3";
 const CURSO_CORTO = {
   'Introducción al Cálculo': 'Intro',
@@ -314,7 +315,7 @@ function goHome(){show('screen-register')}
 
 function saveState(){
   if(!studentData.nombre) return;
-  const state={studentData, activeClues, answers, submitted, secondsLeft, savedAt: Date.now()};
+  const state={studentData, activeClues, answers, submitted, secondsLeft, savedAt: Date.now(), sessionCount: (studentData.sessionCount||1)};
   try{ localStorage.setItem('gamif_'+CURSO+'_'+studentData.nombre, JSON.stringify(state)); }catch(e){}
 }
 
@@ -339,15 +340,18 @@ function startActivity(){
   try{ const s = localStorage.getItem('gamif_'+CURSO+'_'+nombreCompleto); if(s) saved = JSON.parse(s); }catch(e){}
 
   if(saved && !saved.submitted){
-    // Restore previous session — subtract time elapsed while away
     studentData = saved.studentData;
+    studentData.sessionCount = (saved.sessionCount||1) + 1;
     activeClues = saved.activeClues;
     answers     = saved.answers;
     submitted   = saved.submitted;
     const elapsed = saved.savedAt ? Math.floor((Date.now() - saved.savedAt) / 1000) : 0;
     secondsLeft = Math.max(0, saved.secondsLeft - elapsed);
+    // Keep original startedAt so total time is accurate
+    if(!studentData.startedAt) studentData.startedAt = Date.now() - ((TIME_LIMIT - saved.secondsLeft) * 1000);
   } else {
     studentData={nombre:nombreCompleto, dia, horario, curso:CURSO};
+    studentData.startedAt = Date.now();
     answers={};submitted=false;
     secondsLeft = TIME_LIMIT;
 
@@ -372,6 +376,7 @@ function startActivity(){
   document.getElementById('disp-nombre').textContent=studentData.nombre;
   document.getElementById('disp-dia').textContent=studentData.dia;
   document.getElementById('disp-horario').textContent=studentData.horario;
+  document.getElementById('disp-sesion').textContent=studentData.sessionCount||1;
   document.getElementById('score-box').style.display='none';
   document.getElementById('submit-btn').disabled=false;
   document.getElementById('submit-btn').textContent='✔ Entregar Actividad';
@@ -393,6 +398,7 @@ function renderClues(){
   container.innerHTML='';
   activeClues.forEach(item=>{
     const id=item.displayId;
+    const state=answers[id];
     const div=document.createElement('div');
     div.className='clue-row';div.id=`row-${id}`;
     div.innerHTML=`
@@ -413,12 +419,48 @@ function renderClues(){
       <div style="min-width:55px;text-align:right"><span class="clue-answer" id="ans-${id}"></span></div>`;
     container.appendChild(div);
 
-    // Wire input and button via addEventListener (mobile-safe)
     const inp = div.querySelector(`#inp-${id}`);
     const btn = div.querySelector(`#btn-${id}`);
     inp.addEventListener('input', ()=>{ inp.value = inp.value.toUpperCase(); });
     inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submitAnswer(id); }});
     btn.addEventListener('click', ()=> submitAnswer(id));
+
+    // Restore visual state if session was saved
+    if(state){
+      const fbEl=div.querySelector(`#fb-${id}`);
+      const row=div.querySelector(`#row-${id}`) || div;
+      const ansEl=div.querySelector(`#ans-${id}`);
+      const dot1=div.querySelector(`#dot-${id}-1`);
+      const dot2=div.querySelector(`#dot-${id}-2`);
+
+      if(state.correct){
+        inp.value=state.word;
+        inp.disabled=true;btn.disabled=true;
+        div.className='clue-row correct';
+        fbEl.textContent='✓ ¡Correcto!';fbEl.className='feedback ok';
+        ansEl.textContent=state.word;ansEl.className='clue-answer';
+        if(dot1) dot1.className='attempt-dot correct';
+        highlightWord(item.word);
+      } else if(state.attemptsUsed>=2){
+        inp.disabled=true;btn.disabled=true;
+        div.className='clue-row exhausted';
+        fbEl.textContent='✗ Agotaste los intentos';fbEl.className='feedback bad';
+        if(dot1) dot1.className='attempt-dot wrong';
+        if(dot2) dot2.className='attempt-dot wrong';
+        // Show last attempt in input
+        if(state.attempts.length>0) inp.value=state.attempts[state.attempts.length-1];
+      } else if(state.attemptsUsed===1){
+        div.className='clue-row wrong';
+        fbEl.textContent='✗ Incorrecto, intenta de nuevo';fbEl.className='feedback bad';
+        if(dot1) dot1.className='attempt-dot wrong';
+        if(state.attempts.length>0) inp.value=state.attempts[0];
+      } else if(state.nearlyCorrect){
+        div.className='clue-row nearly';
+        fbEl.textContent='⚠ Casi correcto, revisá la palabra en la sopa de letras';fbEl.className='feedback warn';
+        inp.style.background='#fff9c4';
+        if(state.attempts.length>0) inp.value=state.attempts[state.attempts.length-1];
+      }
+    }
   });
 }
 
@@ -511,7 +553,11 @@ function calcScore(){
 // Builds the progress payload and sends it to Sheets (fire-and-forget)
 function syncProgress(tipo='progreso', score=null){
   if(!SCRIPT_URL) return;
-  const segundosUsados = TIME_LIMIT - secondsLeft;
+  // Calculate real elapsed time using timestamp, not countdown
+  const realElapsed = studentData.startedAt
+    ? Math.floor((Date.now() - studentData.startedAt) / 1000)
+    : (TIME_LIMIT - secondsLeft);
+  const segundosUsados = Math.min(realElapsed, TIME_LIMIT);
   const mm = Math.floor(segundosUsados/60);
   const ss2 = segundosUsados%60;
   const tiempoUsado = String(mm).padStart(2,'0')+':'+String(ss2).padStart(2,'0');
@@ -531,6 +577,7 @@ function syncProgress(tipo='progreso', score=null){
   const record={
     tipo,
     nombre:       studentData.nombre,
+    sesion:       studentData.sessionCount || 1,
     dia:          studentData.dia,
     horario:      studentData.horario,
     curso:        CURSO,
@@ -572,9 +619,9 @@ async function submitActivity(timeUp=false){
   const box=document.getElementById('score-box');
   box.style.display='block';
   document.getElementById('final-score').textContent=score;
-  const msgs=['¡Excelente trabajo! 🏆','¡Muy bien! 🎉','Buen esfuerzo. 👍','Sigue practicando. 📚','No te rindas, repasa el material. 💪'];
+  const msgs=['Excelente trabajo.','Muy bien.','Buen esfuerzo.','Sigue practicando.','Repasa el material antes de la próxima actividad.'];
   document.getElementById('score-msg').textContent = timeUp
-    ? '⏱ Se agotó el tiempo. Actividad entregada automáticamente.'
+    ? 'Se agotó el tiempo. Actividad entregada automáticamente.'
     : msgs[score>=90?0:score>=75?1:score>=60?2:score>=40?3:4];
   box.scrollIntoView({behavior:'smooth'});
   const submitBtn=document.getElementById('submit-btn');
